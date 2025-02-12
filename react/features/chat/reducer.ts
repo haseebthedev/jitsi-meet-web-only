@@ -19,6 +19,7 @@ import { IMessage } from './types';
 
 const DEFAULT_STATE = {
     isOpen: false,
+    isChatOpenForOthers: true,
     isPollsTabFocused: false,
     lastReadMessage: undefined,
     messages: [],
