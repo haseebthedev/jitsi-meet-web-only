@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
-import { useSyncDemo } from "@tldraw/sync";
+import { useSync, useSyncDemo } from "@tldraw/sync";
 import {
     Tldraw,
     Editor,
@@ -24,6 +24,7 @@ import Icon from "../../../../../base/icons/components/Icon";
 import { IconTrash, IconUndo, IconRedo } from "../../../../../base/icons/svg";
 import { extractPresentationIdFromSlideUrl } from "../utils";
 import "tldraw/tldraw.css";
+import { WORKER_URL } from "../constants";
 
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
     iamModerator?: boolean;
@@ -54,8 +55,8 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         const roomId = `${classId}-${occupantId}`;
         const [editor, setEditor] = useState<Editor | null>(null);
 
-        const store = useSyncDemo({ roomId });
-        // const store = useSync({ uri: `${WORKER_URL}/connect/${roomId}`, assets: multiplayerAssets });
+        // const store = useSyncDemo({ roomId });
+        const store = useSync({ uri: `${WORKER_URL}/connect/${roomId}`, assets: multiplayerAssets });
 
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);

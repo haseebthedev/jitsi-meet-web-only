@@ -4,6 +4,7 @@ const WORKER_URL = "https://jitsi.withturtled.com:5002";
 
 export const multiplayerAssets: TLAssetStore = {
     // to upload an asset, we prefix it with a unique id, POST it to our worker, and return the URL
+    // @ts-ignore
     async upload(_asset, file) {
         const id = uniqueId()
 
@@ -27,6 +28,7 @@ export const multiplayerAssets: TLAssetStore = {
         return asset.props.src
     },
 }
+
 
 // How does our server handle bookmark unfurling?
 export async function unfurlBookmarkUrl({ url }: { url: string }): Promise<TLBookmarkAsset> {
