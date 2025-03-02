@@ -17,6 +17,8 @@ import {
     DefaultSizeStyle,
     DefaultFontStyle,
     TLUiEventHandler,
+    react,
+    computed,
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
 import { processSlideUrl } from "./api";
@@ -56,7 +58,11 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         const [editor, setEditor] = useState<Editor | null>(null);
 
         // const store = useSyncDemo({ roomId });
-        const store = useSync({ uri: `${WORKER_URL}/connect/${roomId}`, assets: multiplayerAssets });
+        const store = useSync({
+            uri: `${WORKER_URL}/connect/${roomId}`,
+            assets: multiplayerAssets,
+            userInfo: { id: occupantId },
+        });
 
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);
@@ -292,7 +298,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             // Register the event listener
             const cleanupFunction = editor.store.listen(handleChangeEvent, {
                 scope: "all",
-                source: "all",
+                source: "remote",
             });
 
             // Cleanup listener on component unmount or when dependencies change
@@ -300,6 +306,50 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                 cleanupFunction();
             };
         }, [editor, isInSidebar]);
+
+        // useEffect(() => {
+        //     if (!editor || isInSidebar) return;
+
+        //     const isLeader = true;
+
+        //     const latestLeaderPresence = computed("latestLeaderPresence", () => {
+        //         return editor.getCollaborators().find((p) => p.userId.includes(occupantId));
+        //     });
+
+        //     const dispose = react("update current page", () => {
+        //         console.log("update current page...");
+
+        //         if (isLeader) return; // The leader doesn't follow anyone
+
+        //         const leaderPresence = latestLeaderPresence.get();
+        //         if (!leaderPresence) {
+        //             editor.stopFollowingUser();
+        //             return;
+        //         }
+
+        //         if (
+        //             leaderPresence.currentPageId !== editor.getCurrentPageId() &&
+        //             editor.getPage(leaderPresence.currentPageId)
+        //         ) {
+        //             editor.run(
+        //                 () => {
+        //                     editor.store.put([
+        //                         {
+        //                             ...editor.getInstanceState(),
+        //                             currentPageId: leaderPresence.currentPageId,
+        //                         },
+        //                     ]);
+        //                     editor.startFollowingUser(leaderPresence.userId);
+        //                 },
+        //                 { history: "ignore" }
+        //             );
+        //         }
+        //     });
+
+        //     return () => {
+        //         dispose();
+        //     };
+        // }, [editor, isInSidebar]);
 
         const components: TLComponents = {
             ...{

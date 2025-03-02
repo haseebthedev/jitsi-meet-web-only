@@ -1,5 +1,5 @@
 import React from "react";
-import { Editor, TLRecord } from "tldraw";
+import { computed, Editor, react, TLRecord } from "tldraw";
 import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
 
 interface SidebarI {
@@ -11,42 +11,84 @@ interface SidebarI {
 }
 
 // @ts-ignore
-const isInstanceRecord = (record: TLRecord): record is { currentPageId: string } => "currentPageId" in record;
+// const isInstanceRecord = (record: TLRecord): record is { currentPageId: string } => "currentPageId" in record;
 
 const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId }: SidebarI) => {
     const items = iamModerator
         ? occupants.filter((el) => el.role === "participant") // Show students for moderators
         : occupants.filter((el) => el.role === "moderator"); // Show tutor for students
 
-    const handleEditorMount = (editor: Editor) => {
-        const handleChangeEvent = (change: any) => {
-            const { added, updated, removed } = change.changes;
+    // const handleEditorMount = (editor: Editor) => {
+    //     const handleChangeEvent = (change: any) => {
+    //         const { added, updated, removed } = change.changes;
 
-            added && console.log("Added:", added);
-            updated && console.log("Updated:", updated);
-            removed && console.log("Removed:", removed);
+    //         added && console.log("Added:", added);
+    //         updated && console.log("Updated:", updated);
+    //         removed && console.log("Removed:", removed);
 
-            // Process updated changes
-            Object.values(updated).forEach(([from, to]: any) => {
-                if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
-                    // @ts-ignore
-                    editor.setCurrentPage(to.currentPageId);
-                }
+    //         // Process updated changes
+    //         Object.values(updated).forEach(([from, to]: any) => {
+    //             // if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
+    //             //     // @ts-ignore
+    //             //     editor.setCurrentPage(to.currentPageId);
+    //             // }
 
-                const currentPageId = editor.getCurrentPageId();
-                if (currentPageId.includes("page:IA")) {
-                    editor.zoomToFit({ force: true, immediate: true });
-                }
-            });
-        };
+    //             const currentPageId = editor.getCurrentPageId();
+    //             if (currentPageId.includes("page:IA")) {
+    //                 editor.zoomToFit({ force: true, immediate: true });
+    //             }
+    //         });
+    //     };
 
-        const cleanupFunction = editor.store.listen(handleChangeEvent, {
-            scope: "all",
-            source: "all",
+    //     const cleanupFunction = editor.store.listen(handleChangeEvent, {
+    //         scope: "all",
+    //         source: "all",
+    //     });
+
+    //     return () => {
+    //         cleanupFunction();
+    //     };
+    // };
+
+    const onMount = (occupantId: string, editor: Editor) => {
+        const isLeader = false;
+
+        const latestLeaderPresence = computed("latestLeaderPresence", () => {
+            return editor.getCollaborators().find((p) => p.userId.includes(occupantId));
+        });
+
+        const dispose = react("update current page", () => {
+            console.log("update current page...");
+
+            if (isLeader) return; // The leader doesn't follow anyone
+
+            const leaderPresence = latestLeaderPresence.get();
+            if (!leaderPresence) {
+                editor.stopFollowingUser();
+                return;
+            }
+
+            if (
+                leaderPresence.currentPageId !== editor.getCurrentPageId() &&
+                editor.getPage(leaderPresence.currentPageId)
+            ) {
+                editor.run(
+                    () => {
+                        editor.store.put([
+                            {
+                                ...editor.getInstanceState(),
+                                currentPageId: leaderPresence.currentPageId,
+                            },
+                        ]);
+                        editor.startFollowingUser(leaderPresence.userId);
+                    },
+                    { history: "ignore" }
+                );
+            }
         });
 
         return () => {
-            cleanupFunction();
+            dispose();
         };
     };
 
@@ -79,7 +121,11 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
                                     hideUi={true}
                                     onMount={(editor) => {
                                         editorsRef?.current.set(String(occupant?.name).toLowerCase(), editor);
-                                        handleEditorMount(editor);
+
+                                        const occupantId = String(occupant?.name).toLowerCase();
+                                        onMount(occupantId, editor);
+
+                                        // handleEditorMount(editor);
 
                                         editor.zoomToFit({ force: true });
                                     }}
