@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { computed, Editor, react, TLRecord } from "tldraw";
 import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
 
@@ -11,7 +11,7 @@ interface SidebarI {
 }
 
 // @ts-ignore
-// const isInstanceRecord = (record: TLRecord): record is { currentPageId: string } => "currentPageId" in record;
+const isInstanceRecord = (record: TLRecord): record is { currentPageId: string } => "currentPageId" in record;
 
 const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId }: SidebarI) => {
     const items = iamModerator
@@ -28,21 +28,21 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
 
     //         // Process updated changes
     //         Object.values(updated).forEach(([from, to]: any) => {
-    //             // if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
-    //             //     // @ts-ignore
-    //             //     editor.setCurrentPage(to.currentPageId);
-    //             // }
-
-    //             const currentPageId = editor.getCurrentPageId();
-    //             if (currentPageId.includes("page:IA")) {
-    //                 editor.zoomToFit({ force: true, immediate: true });
+    //             if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
+    //                 // @ts-ignore
+    //                 editor.setCurrentPage(to.currentPageId);
     //             }
+
+    //             // const currentPageId = editor.getCurrentPageId();
+    //             // if (currentPageId.includes("page:IA")) {
+    //             //     editor.zoomToFit({ force: true, immediate: true });
+    //             // }
     //         });
     //     };
 
     //     const cleanupFunction = editor.store.listen(handleChangeEvent, {
     //         scope: "all",
-    //         source: "all",
+    //         source: "user",
     //     });
 
     //     return () => {
@@ -50,7 +50,7 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
     //     };
     // };
 
-    const onMount = (occupantId: string, editor: Editor) => {
+    const onMount = useCallback((occupantId: string, editor: Editor) => {
         const isLeader = false;
 
         const latestLeaderPresence = computed("latestLeaderPresence", () => {
@@ -58,8 +58,6 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
         });
 
         const dispose = react("update current page", () => {
-            console.log("update current page...");
-
             if (isLeader) return; // The leader doesn't follow anyone
 
             const leaderPresence = latestLeaderPresence.get();
@@ -90,7 +88,7 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
         return () => {
             dispose();
         };
-    };
+    }, []);
 
     return (
         <div className="sidebar">
@@ -120,9 +118,10 @@ const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId 
                                     isInSidebar={true}
                                     hideUi={true}
                                     onMount={(editor) => {
-                                        editorsRef?.current.set(String(occupant?.name).toLowerCase(), editor);
-
                                         const occupantId = String(occupant?.name).toLowerCase();
+
+                                        editorsRef?.current.set(occupantId, editor);
+
                                         onMount(occupantId, editor);
 
                                         // handleEditorMount(editor);

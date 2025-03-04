@@ -38,8 +38,8 @@ interface IDimensions {
  * @returns {JSX.Element} - The React component.
  */
 const Whiteboard = (props: WithTranslation): JSX.Element => {
-    const excalidrawRef = useRef<any>(null);
-    const excalidrawAPIRef = useRef<any>(null);
+    // const excalidrawRef = useRef<any>(null);
+    // const excalidrawAPIRef = useRef<any>(null);
     const collabAPIRef = useRef<any>(null);
 
     const isOpen = useSelector(isWhiteboardOpen);
@@ -48,8 +48,8 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
     const { clientHeight, clientWidth } = useSelector((state: IReduxState) => state["features/base/responsive-ui"]);
     const { visible: filmstripVisible, isResizing } = useSelector((state: IReduxState) => state["features/filmstrip"]);
     const filmstripWidth: number = useSelector(getVerticalViewMaxWidth);
-    const collabDetails = useSelector(getCollabDetails);
-    const collabServerUrl = useSelector(getCollabServerUrl);
+    // const collabDetails = useSelector(getCollabDetails);
+    // const collabServerUrl = useSelector(getCollabServerUrl);
     const { defaultRemoteDisplayName } = useSelector((state: IReduxState) => state["features/base/config"]);
     const localParticipantName = useSelector(getLocalParticipant)?.name || defaultRemoteDisplayName || "Fellow Jitster";
 
@@ -93,23 +93,23 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
         };
     };
 
-    const getExcalidrawAPI = useCallback((excalidrawAPI) => {
-        if (excalidrawAPIRef.current) {
-            return;
-        }
-        excalidrawAPIRef.current = excalidrawAPI;
-    }, []);
+    // const getExcalidrawAPI = useCallback((excalidrawAPI) => {
+    //     if (excalidrawAPIRef.current) {
+    //         return;
+    //     }
+    //     excalidrawAPIRef.current = excalidrawAPI;
+    // }, []);
 
-    const getCollabAPI = useCallback(
-        (collabAPI) => {
-            if (collabAPIRef.current) {
-                return;
-            }
-            collabAPIRef.current = collabAPI;
-            collabAPIRef.current.setUsername(localParticipantName);
-        },
-        [localParticipantName]
-    );
+    // const getCollabAPI = useCallback(
+    //     (collabAPI) => {
+    //         if (collabAPIRef.current) {
+    //             return;
+    //         }
+    //         collabAPIRef.current = collabAPI;
+    //         collabAPIRef.current.setUsername(localParticipantName);
+    //     },
+    //     [localParticipantName]
+    // );
 
     return (
         <div

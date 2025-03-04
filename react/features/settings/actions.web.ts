@@ -135,8 +135,6 @@ export function submitMoreTab(newState: any) {
         const showPrejoinPage = newState.showPrejoinPage;
         const screenSharingEnabledByModerator = newState.screenSharingEnabledByModerator
 
-        console.log("screenSharingEnabledByModerator === ", screenSharingEnabledByModerator);
-
         if (showPrejoinPage !== currentState.showPrejoinPage) {
             dispatch(updateSettings({
                 userSelectedSkipPrejoin: !showPrejoinPage

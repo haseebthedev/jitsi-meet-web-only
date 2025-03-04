@@ -94,10 +94,10 @@ export function hideToolbox(force = false) {
         const hoveredElem = document.querySelector(hoverSelector);
 
         if (!force
-                && (hovered
-                    || state['features/invite'].calleeInfoVisible
-                    || (state['features/chat'].isOpen && !autoHideWhileChatIsOpen)
-                    || hoveredElem)) {
+            && (hovered
+                || state['features/invite'].calleeInfoVisible
+                || (state['features/chat'].isOpen && !autoHideWhileChatIsOpen)
+                || hoveredElem)) {
             dispatch(
                 setToolboxTimeout(
                     () => dispatch(hideToolbox()),
@@ -201,15 +201,18 @@ export function showToolbox(timeout = 0) {
             if (!alwaysVisible) {
                 if (typeof initialTimeout === 'number') {
                     // reset `initialTimeout` once it is consumed once
-                    dispatch(overwriteConfig({ toolbarConfig: {
-                        ...toolbarConfig,
-                        initialTimeout: null
-                    } }));
+                    dispatch(overwriteConfig({
+                        toolbarConfig: {
+                            ...toolbarConfig,
+                            initialTimeout: null
+                        }
+                    }));
                 }
-                dispatch(
-                    setToolboxTimeout(
-                        () => dispatch(hideToolbox()),
-                        timeout || initialTimeout || toolbarTimeout));
+                // This is to prevent closure of tldraw page menu
+                // dispatch(
+                //     setToolboxTimeout(
+                //         () => dispatch(hideToolbox()),
+                //         timeout || initialTimeout || toolbarTimeout));
             }
         }
     };
@@ -305,7 +308,7 @@ export function setToolbarHovered(hovered: boolean) {
  * }}
  */
 export function setToolboxTimeout(handler: Function, timeoutMS: number) {
-    return function(dispatch: IStore['dispatch']) {
+    return function (dispatch: IStore['dispatch']) {
         if (isMobileBrowser()) {
             return;
         }

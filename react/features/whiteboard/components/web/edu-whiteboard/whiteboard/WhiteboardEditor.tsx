@@ -22,11 +22,11 @@ import {
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
 import { processSlideUrl } from "./api";
-import Icon from "../../../../../base/icons/components/Icon";
 import { IconTrash, IconUndo, IconRedo } from "../../../../../base/icons/svg";
 import { extractPresentationIdFromSlideUrl } from "../utils";
-import "tldraw/tldraw.css";
 import { WORKER_URL } from "../constants";
+import Icon from "../../../../../base/icons/components/Icon";
+import "tldraw/tldraw.css";
 
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
     iamModerator?: boolean;
@@ -285,6 +285,11 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
 
             const handleChangeEvent = (change: any) => {
                 Object.values(change.changes.updated).forEach(([from, to]: any) => {
+                    // if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
+                    //     // @ts-ignore
+                    //     editor.setCurrentPage(to.currentPageId);
+                    // }
+
                     const currentPageId = editor.getCurrentPageId();
                     // if (currentPageId.includes("page:IA") || isInSidebar || previewMode) {
                     if (currentPageId.includes("page:IA") || isInSidebar) {

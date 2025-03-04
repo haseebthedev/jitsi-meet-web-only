@@ -248,7 +248,6 @@ class MoreTab extends AbstractDialogTab<IProps, any> {
      * @returns {void}
      */
     _onScreenSharingChanged({ target: { checked } }: React.ChangeEvent<HTMLInputElement>) {
-        console.log("checked.. ", checked);
         super._onChange({ screenSharingEnabledByModerator: checked });
     }
 

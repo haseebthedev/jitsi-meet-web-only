@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
 import { Sidebar } from "./WhiteboardSidebar";
 import { AssetRecordType, createShapeId, Editor, getSnapshot, TLEditorSnapshot, TLImageShape, transact } from "tldraw";
@@ -6,14 +6,18 @@ import { useSelector } from "react-redux";
 import { IReduxState } from "../../../../app/types";
 import { isLocalParticipantModerator } from "../../../../base/participants/functions";
 import { WhiteboarMobileTopBar } from "./WhiteboardMobileTopBar";
+import { IParticipant } from "../../../../base/participants/types";
 
 const WhiteboardApp = () => {
     const editorsRef = useRef(new Map<string, Editor>());
 
-    const state = useSelector((state: IReduxState) => state);
-
-    const { room } = useSelector((state: IReduxState) => state["features/base/conference"]);
-    const { local, remote } = useSelector((state: IReduxState) => state["features/base/participants"]);
+    // Consolidate useSelector calls
+    const { room, local, remote, state } = useSelector((state: IReduxState) => ({
+        room: state["features/base/conference"].room,
+        local: state["features/base/participants"].local,
+        remote: state["features/base/participants"].remote,
+        state,
+    }));
 
     const iamModerator = isLocalParticipantModerator(state);
 
@@ -28,24 +32,20 @@ const WhiteboardApp = () => {
 
         if (remote) {
             remote.forEach((value) => {
-                if (value.role === "moderator" || value.role === "participant") {
-                    // @ts-ignore
+                if (value && value.name && (value.role === "moderator" || value.role === "participant")) {
                     participantList.set(value.name.toLowerCase(), value);
                 }
             });
         }
-
         return Array.from(participantList.values());
     }, [state, local, remote]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 2000);
+        const timer = setTimeout(() => setIsLoading(false), 2000);
         return () => clearTimeout(timer);
     }, []);
 
-    const onActivityUpload = (images: string[], onClose: Function) => {
+    const onActivityUpload = useCallback((images: string[], onClose: Function) => {
         if (!images || images.length === 0) return;
 
         // Works like transaction to ensure atomicity
@@ -118,9 +118,9 @@ const WhiteboardApp = () => {
         });
 
         onClose?.();
-    };
+    }, []);
 
-    const onActivityRemove = () => {
+    const onActivityRemove = useCallback(() => {
         transact(() => {
             editorsRef.current.forEach((editor) => {
                 // Get all pages
@@ -170,9 +170,9 @@ const WhiteboardApp = () => {
                 editor.zoomToFit();
             });
         });
-    };
+    }, []);
 
-    const handleClosePreview = (occupantId: string) => {
+    const handleClosePreview = useCallback((occupantId: string) => {
         const editor = editorsRef.current.get(occupantId);
         if (editor) {
             // Fetch the current page from the occupant's whiteboard
@@ -182,9 +182,9 @@ const WhiteboardApp = () => {
             editor.setCurrentPage(currentPageId);
             setParticipantPreview(null);
         }
-    };
+    }, []);
 
-    const handleClearUserContent = () => {
+    const handleClearUserContent = useCallback(() => {
         transact(() => {
             const editor = editorsRef.current.get(String(local?.name).toLowerCase());
             if (!editor) return;
@@ -203,7 +203,7 @@ const WhiteboardApp = () => {
             });
             editor.deleteShapes(shapesToDelete);
         });
-    };
+    }, []);
 
     if (isLoading) return <div className="centered-content">Loading...</div>;
 

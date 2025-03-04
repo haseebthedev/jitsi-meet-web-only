@@ -236,8 +236,6 @@ const Chat = ({
      * @returns {ReactElement}
      */
     function renderChat() {
-        console.log("_isUserModerator === ", _isUserModerator);
-
         return (
             <>
                 {_isPollsEnabled && renderTabs()}
