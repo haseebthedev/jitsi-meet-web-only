@@ -1,5 +1,5 @@
-import React, { memo, useEffect, useState } from "react";
-import { useSync, useSyncDemo } from "@tldraw/sync";
+import React, { memo, useCallback, useEffect, useState } from "react";
+import { useSync } from "@tldraw/sync";
 import {
     Tldraw,
     Editor,
@@ -17,8 +17,6 @@ import {
     DefaultSizeStyle,
     DefaultFontStyle,
     TLUiEventHandler,
-    react,
-    computed,
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
 import { processSlideUrl } from "./api";
@@ -312,50 +310,6 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             };
         }, [editor, isInSidebar]);
 
-        // useEffect(() => {
-        //     if (!editor || isInSidebar) return;
-
-        //     const isLeader = true;
-
-        //     const latestLeaderPresence = computed("latestLeaderPresence", () => {
-        //         return editor.getCollaborators().find((p) => p.userId.includes(occupantId));
-        //     });
-
-        //     const dispose = react("update current page", () => {
-        //         console.log("update current page...");
-
-        //         if (isLeader) return; // The leader doesn't follow anyone
-
-        //         const leaderPresence = latestLeaderPresence.get();
-        //         if (!leaderPresence) {
-        //             editor.stopFollowingUser();
-        //             return;
-        //         }
-
-        //         if (
-        //             leaderPresence.currentPageId !== editor.getCurrentPageId() &&
-        //             editor.getPage(leaderPresence.currentPageId)
-        //         ) {
-        //             editor.run(
-        //                 () => {
-        //                     editor.store.put([
-        //                         {
-        //                             ...editor.getInstanceState(),
-        //                             currentPageId: leaderPresence.currentPageId,
-        //                         },
-        //                     ]);
-        //                     editor.startFollowingUser(leaderPresence.userId);
-        //                 },
-        //                 { history: "ignore" }
-        //             );
-        //         }
-        //     });
-
-        //     return () => {
-        //         dispose();
-        //     };
-        // }, [editor, isInSidebar]);
-
         const components: TLComponents = {
             ...{
                 SharePanel: iamModerator ? CustomSharePanelForModerator : CustomSharePanelForParticipant,
@@ -365,28 +319,30 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             },
         };
 
-        const onUiEvent: TLUiEventHandler = (name) => {
+        const onUiEvent = useCallback<TLUiEventHandler>((name, _: any) => {
             // For enforcing manual back-to-content logic
             if (name.toString() === "zoom-to-content") {
                 editor?.zoomToFit({ force: true, immediate: true });
                 editor?.resetZoom();
             }
-        };
+        }, []);
 
         return (
-            <Tldraw
-                store={store}
-                forceMobile={true}
-                components={components}
-                onUiEvent={onUiEvent}
-                onMount={(editor) => {
-                    setEditor(editor);
-                    editor.registerExternalAssetHandler("url", unfurlBookmarkUrl);
+            <div onCopy={(event) => event.stopPropagation()}>
+                <Tldraw
+                    store={store}
+                    forceMobile={true}
+                    components={components}
+                    onUiEvent={onUiEvent}
+                    onMount={(editor) => {
+                        setEditor(editor);
+                        editor.registerExternalAssetHandler("url", unfurlBookmarkUrl);
 
-                    if (onMount) onMount(editor);
-                }}
-                {...rest}
-            />
+                        if (onMount) onMount(editor);
+                    }}
+                    {...rest}
+                />
+            </div>
         );
     }
 );

@@ -208,11 +208,10 @@ export function showToolbox(timeout = 0) {
                         }
                     }));
                 }
-                // This is to prevent closure of tldraw page menu
-                // dispatch(
-                //     setToolboxTimeout(
-                //         () => dispatch(hideToolbox()),
-                //         timeout || initialTimeout || toolbarTimeout));
+                dispatch(
+                    setToolboxTimeout(
+                        () => dispatch(hideToolbox()),
+                        timeout || initialTimeout || toolbarTimeout));
             }
         }
     };
