@@ -310,6 +310,33 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             };
         }, [editor, isInSidebar]);
 
+    // Zoom when solo tutor navigates to a new page (e.g., Page 2+)
+    useEffect(() => {
+        if (!editor || isInSidebar || previewMode) return;
+        const handlePageChange = () => {
+            const currentPageId = editor.getCurrentPageId();
+
+            if (currentPageId.includes("page:IA")) {
+                console.log("handlePageChange called");
+                editor.setCameraOptions({ isLocked: false });
+                editor.zoomToFit({ force: true, immediate: true });
+            }
+        };
+
+        // Listen to page changes
+        const removeListener = editor.store.listen(() => {
+            handlePageChange();
+        }, {
+            scope: 'all',
+            source: 'user',
+        });
+
+        return () => {
+            removeListener();
+        };
+    }, [editor, isInSidebar, previewMode]);
+
+
         const components: TLComponents = {
             ...{
                 SharePanel: iamModerator ? CustomSharePanelForModerator : CustomSharePanelForParticipant,
