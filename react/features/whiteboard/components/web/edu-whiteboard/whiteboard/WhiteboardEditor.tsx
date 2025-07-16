@@ -111,6 +111,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                 </>
             );
         };
+        
 
         const CustomSharePanelForModerator = () => {
             const { addDialog } = useDialogs();
@@ -355,7 +356,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         }, []);
 
         return (
-            <div onCopy={(event) => event.stopPropagation()}>
+            <div>
                 <Tldraw
                     store={store}
                     forceMobile={true}
