@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { computed, Editor, react, TLRecord } from "tldraw";
-import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
+import { WhiteboardEditor } from "../../core/WhiteboardEditor";
 
 interface SidebarI {
     iamModerator: boolean | null;

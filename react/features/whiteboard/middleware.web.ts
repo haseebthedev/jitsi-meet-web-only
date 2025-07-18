@@ -18,7 +18,7 @@ import {
     restrictWhiteboard,
     setupWhiteboard
 } from './actions';
-import WhiteboardLimitDialog from './components/web/WhiteboardLimitDialog';
+import WhiteboardLimitDialog from './components/web/components/dialogs/WhiteboardLimitDialog';
 import { WHITEBOARD_ID, WHITEBOARD_PARTICIPANT_NAME } from './constants';
 import {
     generateCollabServerUrl,

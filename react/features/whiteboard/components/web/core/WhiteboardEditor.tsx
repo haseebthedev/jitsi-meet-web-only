@@ -19,11 +19,11 @@ import {
     TLUiEventHandler,
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
-import { processSlideUrl } from "./api";
-import { IconTrash, IconUndo, IconRedo } from "../../../../../base/icons/svg";
+import { processSlideUrl } from "../utils/api";
+import { IconTrash, IconUndo, IconRedo } from "../../../../base/icons/svg";
 import { extractPresentationIdFromSlideUrl } from "../utils";
 import { WORKER_URL } from "../constants";
-import Icon from "../../../../../base/icons/components/Icon";
+import Icon from "../../../../base/icons/components/Icon";
 import "tldraw/tldraw.css";
 
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
@@ -318,7 +318,6 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             const currentPageId = editor.getCurrentPageId();
 
             if (currentPageId.includes("page:IA")) {
-                console.log("handlePageChange called");
                 editor.setCameraOptions({ isLocked: false });
                 editor.zoomToFit({ force: true, immediate: true });
             }

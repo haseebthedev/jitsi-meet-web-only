@@ -7,7 +7,7 @@ import Platform from './features/base/react/Platform.web';
 import { getJitsiMeetGlobalNS, getJitsiMeetGlobalNSConnectionTimes } from './features/base/util/helpers';
 import DialInSummaryApp from './features/invite/components/dial-in-summary/web/DialInSummaryApp';
 import PrejoinApp from './features/prejoin/components/web/PrejoinApp';
-import WhiteboardApp from './features/whiteboard/components/web/WhiteboardApp';
+import WhiteboardApp from './features/whiteboard/components/web/containers/WhiteboardApp';
 
 const logger = getLogger('index.web');
 

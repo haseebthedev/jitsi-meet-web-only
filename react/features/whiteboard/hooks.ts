@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 
-import WhiteboardButton from './components/web/WhiteboardButton';
+import WhiteboardButton from '../whiteboard/components/web/components/buttons/WhiteboardButton';
 import { isWhiteboardButtonVisible } from './functions';
 
 const whiteboard = {

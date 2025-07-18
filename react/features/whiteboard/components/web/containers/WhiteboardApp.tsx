@@ -1,15 +1,15 @@
 import { generateCollaborationLinkData } from '@jitsi/excalidraw';
 import React, { ComponentType } from 'react';
 
-import BaseApp from '../../../base/app/components/BaseApp';
-import GlobalStyles from '../../../base/ui/components/GlobalStyles.web';
-import JitsiThemeProvider from '../../../base/ui/components/JitsiThemeProvider.web';
-import { decodeFromBase64URL } from '../../../base/util/httpUtils';
-import { parseURLParams } from '../../../base/util/parseURLParams';
-import { safeDecodeURIComponent } from '../../../base/util/uri';
-import logger from '../../logger';
+import BaseApp from '../../../../base/app/components/BaseApp';
+import GlobalStyles from '../../../../base/ui/components/GlobalStyles.web';
+import JitsiThemeProvider from '../../../../base/ui/components/JitsiThemeProvider.web';
+import { decodeFromBase64URL } from '../../../../base/util/httpUtils';
+import { parseURLParams } from '../../../../base/util/parseURLParams';
+import { safeDecodeURIComponent } from '../../../../base/util/uri';
+import logger from '../../../logger';
 
-import NoWhiteboardError from './NoWhiteboardError';
+import NoWhiteboardError from '../components/errors/NoWhiteboardError';
 import WhiteboardWrapper from './WhiteboardWrapper';
 
 /**
@@ -38,9 +38,9 @@ export default class WhiteboardApp extends BaseApp<any> {
                 roomId = collabDetails.roomId;
                 roomKey = collabDetails.roomKey;
 
-                if (window.ReactNativeWebView) {
+                if (typeof window !== 'undefined' && 'ReactNativeWebView' in window) {
                     setTimeout(() => {
-                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
                             collabDetails,
                             collabServerUrl
                         }));

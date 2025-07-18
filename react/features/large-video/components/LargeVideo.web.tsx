@@ -16,7 +16,7 @@ import { getVerticalViewMaxWidth, isFilmstripResizable } from '../../filmstrip/f
 import SharedVideo from '../../shared-video/components/web/SharedVideo';
 import Captions from '../../subtitles/components/web/Captions';
 import { setTileView } from '../../video-layout/actions.web';
-import Whiteboard from '../../whiteboard/components/web/Whiteboard';
+import Whiteboard from '../../whiteboard/components/web/containers/WhiteboardLayout';
 import { isWhiteboardEnabled } from '../../whiteboard/functions';
 import { setSeeWhatIsBeingShared } from '../actions.web';
 import { getLargeVideoParticipant } from '../functions';
