@@ -17,6 +17,7 @@ import {
     DefaultSizeStyle,
     DefaultFontStyle,
     TLUiEventHandler,
+    InstancePageStateRecordType,
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
 import { processSlideUrl } from "./api";
@@ -25,6 +26,7 @@ import { extractPresentationIdFromSlideUrl } from "../utils";
 import { WORKER_URL } from "../constants";
 import Icon from "../../../../../base/icons/components/Icon";
 import "tldraw/tldraw.css";
+import { RecordType } from "tldraw";
 
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
     iamModerator?: boolean;
@@ -61,6 +63,53 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             assets: multiplayerAssets,
             userInfo: { id: occupantId },
         });
+
+        // Function to set page to IA-01 if it exists
+        const setToFirstIAPage = useCallback((editor: Editor) => {
+            const pages = editor.getPages();
+            const iaPages = pages.filter(page => page.id.includes('page:IA'));
+            
+            if (iaPages.length > 0) {
+                const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
+                if (firstIAPage) {
+                    editor.setCurrentPage(firstIAPage.id);
+                    editor.setCameraOptions({ isLocked: true });
+                    editor.zoomToFit({ force: true, immediate: true });
+                }
+            }
+        }, []);
+
+        // Handle initial mount and IA page detection
+        useEffect(() => {
+            if (!editor || iamModerator) return;
+            
+            // Set to IA-01 on initial mount if it exists
+            setToFirstIAPage(editor);
+
+            // Listen for store changes
+            const unsubscribe = editor.store.listen((record) => {
+                // Handle any store changes by checking for IA pages
+                const pages = editor.getPages();
+                const iaPages = pages.filter(page => page.id.includes('page:IA'));
+                
+                if (iaPages.length > 0) {
+                    const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
+                    if (firstIAPage && firstIAPage.id !== editor.getCurrentPageId()) {
+                        // Small delay to ensure pages are fully loaded
+                        setTimeout(() => {
+                            editor.setCurrentPage(firstIAPage.id);
+                            editor.setCameraOptions({ isLocked: true });
+                            editor.zoomToFit({ force: true, immediate: true });
+                        }, 100);
+                    }
+                }
+            }, {
+                scope: 'all',
+                source: 'remote'
+            });
+
+            return () => unsubscribe();
+        }, [editor, iamModerator, setToFirstIAPage]);
 
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);
@@ -337,6 +386,37 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         };
     }, [editor, isInSidebar, previewMode]);
 
+    // Sync student's view to moderator's page change
+useEffect(() => {
+    if (!editor || iamModerator) return;
+  
+    const unsubscribe = editor.store.listen(
+      (record) => {
+        const pageStateUpdates = record.changes?.['instancePageState']?.updated;
+  
+        if (!pageStateUpdates || pageStateUpdates.length === 0) return;
+  
+        const [, newPageState] = pageStateUpdates[0]; // [old, new]
+  
+        const newPageId = newPageState?.current;
+        const currentPageId = editor.getCurrentPageId();
+  
+        if (newPageId && newPageId !== currentPageId) {
+          editor.setCurrentPage(newPageId);
+          editor.setCameraOptions({ isLocked: true });
+          editor.zoomToFit({ force: true, immediate: true });
+        }
+      },
+      {
+        scope: "all",
+        source: "remote",
+      }
+    );
+  
+    return () => {
+      unsubscribe();
+    };
+  }, [editor, iamModerator]);
 
         const components: TLComponents = {
             ...{
