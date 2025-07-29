@@ -26,7 +26,6 @@ import { WORKER_URL } from "../constants";
 import Icon from "../../../../base/icons/components/Icon";
 import "tldraw/tldraw.css";
 
-
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
     iamModerator?: boolean;
     classId: string;
@@ -66,10 +65,10 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         // Function to set page to IA-01 if it exists
         const setToFirstIAPage = useCallback((editor: Editor) => {
             const pages = editor.getPages();
-            const iaPages = pages.filter(page => page.id.includes('page:IA'));
-            
+            const iaPages = pages.filter((page) => page.id.includes("page:IA"));
+
             if (iaPages.length > 0) {
-                const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
+                const firstIAPage = iaPages.find((page) => page.id === "page:IA-01");
                 if (firstIAPage) {
                     editor.setCurrentPage(firstIAPage.id);
                     editor.setCameraOptions({ isLocked: true });
@@ -81,31 +80,34 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         // Handle initial mount and IA page detection
         useEffect(() => {
             if (!editor || iamModerator) return;
-            
+
             // Set to IA-01 on initial mount if it exists
             setToFirstIAPage(editor);
 
             // Listen for store changes
-            const unsubscribe = editor.store.listen((record) => {
-                // Handle any store changes by checking for IA pages
-                const pages = editor.getPages();
-                const iaPages = pages.filter(page => page.id.includes('page:IA'));
-                
-                if (iaPages.length > 0) {
-                    const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
-                    if (firstIAPage && firstIAPage.id !== editor.getCurrentPageId()) {
-                        // Small delay to ensure pages are fully loaded
-                        setTimeout(() => {
-                            editor.setCurrentPage(firstIAPage.id);
-                            editor.setCameraOptions({ isLocked: true });
-                            editor.zoomToFit({ force: true, immediate: true });
-                        }, 100);
+            const unsubscribe = editor.store.listen(
+                (record) => {
+                    // Handle any store changes by checking for IA pages
+                    const pages = editor.getPages();
+                    const iaPages = pages.filter((page) => page.id.includes("page:IA"));
+
+                    if (iaPages.length > 0) {
+                        const firstIAPage = iaPages.find((page) => page.id === "page:IA-01");
+                        if (firstIAPage && firstIAPage.id !== editor.getCurrentPageId()) {
+                            // Small delay to ensure pages are fully loaded
+                            setTimeout(() => {
+                                editor.setCurrentPage(firstIAPage.id);
+                                editor.setCameraOptions({ isLocked: true });
+                                editor.zoomToFit({ force: true, immediate: true });
+                            }, 100);
+                        }
                     }
+                },
+                {
+                    scope: "all",
+                    source: "remote",
                 }
-            }, {
-                scope: 'all',
-                source: 'remote'
-            });
+            );
 
             return () => unsubscribe();
         }, [editor, iamModerator, setToFirstIAPage]);
@@ -114,24 +116,23 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             const [link, setLink] = useState<string | null>(null);
             const [loading, setLoading] = useState<boolean>(false);
             const [error, setError] = useState<string | null>(null);
-        
+
             const handleUpload = async () => {
                 if (!link) return;
-        
+
                 try {
                     setLoading(true);
                     setError(null); // Clear any previous errors
-        
+
                     const presentationId = extractPresentationIdFromSlideUrl(link);
                     if (!presentationId) {
                         setError("Invalid Google Slides link. Please enter a valid URL.");
                         return;
                     }
-        
+
                     // processSlideUrl will now throw an error with the backend's error message
                     const images = await processSlideUrl(presentationId);
                     onActivityUpload?.(images, onClose);
-        
                 } catch (err: any) {
                     // The error message will already be user-friendly from the backend
                     setError(err.message);
@@ -139,7 +140,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                     setLoading(false);
                 }
             };
-        
+
             return (
                 <>
                     <TldrawUiDialogHeader>
@@ -150,17 +151,17 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                         {/* @ts-ignore */}
                         <TldrawUiInput placeholder="Enter Google Slides URL" onValueChange={setLink} />
                         {error && (
-                            <div 
-                                className="error-message" 
-                                style={{ 
-                                    color: '#dc2626',
-                                    marginTop: '8px',
-                                    fontSize: '14px',
-                                    padding: '8px',
-                                    backgroundColor: '#fee2e2',
-                                    borderRadius: '4px',
-                                    border: '1px solid #fca5a5',
-                                    whiteSpace: 'pre-line'
+                            <div
+                                className="error-message"
+                                style={{
+                                    color: "#dc2626",
+                                    marginTop: "8px",
+                                    fontSize: "14px",
+                                    padding: "8px",
+                                    backgroundColor: "#fee2e2",
+                                    borderRadius: "4px",
+                                    border: "1px solid #fca5a5",
+                                    whiteSpace: "pre-line",
                                 }}
                             >
                                 {error}
@@ -173,20 +174,13 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                             <TldrawUiButtonLabel>Cancel</TldrawUiButtonLabel>
                         </TldrawUiButton>
                         {/* @ts-ignore */}
-                        <TldrawUiButton 
-                            type="primary" 
-                            disabled={loading || !link}
-                            onClick={handleUpload}
-                        >
-                            <TldrawUiButtonLabel>
-                                {loading ? "Please Wait..." : "Upload"}
-                            </TldrawUiButtonLabel>
+                        <TldrawUiButton type="primary" disabled={loading || !link} onClick={handleUpload}>
+                            <TldrawUiButtonLabel>{loading ? "Please Wait..." : "Upload"}</TldrawUiButtonLabel>
                         </TldrawUiButton>
                     </TldrawUiDialogFooter>
                 </>
             );
         };
-        
 
         const CustomSharePanelForModerator = () => {
             const { addDialog } = useDialogs();
@@ -386,63 +380,66 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             };
         }, [editor, isInSidebar]);
 
-    // Zoom when solo tutor navigates to a new page (e.g., Page 2+)
-    useEffect(() => {
-        if (!editor || isInSidebar || previewMode) return;
-        const handlePageChange = () => {
-            const currentPageId = editor.getCurrentPageId();
+        // Zoom when solo tutor navigates to a new page (e.g., Page 2+)
+        useEffect(() => {
+            if (!editor || isInSidebar || previewMode) return;
+            const handlePageChange = () => {
+                const currentPageId = editor.getCurrentPageId();
 
-            if (currentPageId.includes("page:IA")) {
-                console.log("handlePageChange called");
-                editor.setCameraOptions({ isLocked: false });
-                editor.zoomToFit({ force: true, immediate: true });
-            }
-        };
+                if (currentPageId.includes("page:IA")) {
+                    console.log("handlePageChange called");
+                    editor.setCameraOptions({ isLocked: false });
+                    editor.zoomToFit({ force: true, immediate: true });
+                }
+            };
 
-        // Listen to page changes
-        const removeListener = editor.store.listen(() => {
-            handlePageChange();
-        }, {
-            scope: 'all',
-            source: 'user',
-        });
+            // Listen to page changes
+            const removeListener = editor.store.listen(
+                () => {
+                    handlePageChange();
+                },
+                {
+                    scope: "all",
+                    source: "user",
+                }
+            );
 
-        return () => {
-            removeListener();
-        };
-    }, [editor, isInSidebar, previewMode]);
+            return () => {
+                removeListener();
+            };
+        }, [editor, isInSidebar, previewMode]);
 
-    // Sync student's view to moderator's page change
-useEffect(() => {
-    if (!editor || iamModerator) return;
-  
-    const unsubscribe = editor.store.listen(
-      (record) => {
-        const pageStateUpdates = record.changes?.['instancePageState']?.updated;
-  
-        if (!pageStateUpdates || pageStateUpdates.length === 0) return;
-  
-        const [, newPageState] = pageStateUpdates[0]; // [old, new]
-  
-        const newPageId = newPageState?.current;
-        const currentPageId = editor.getCurrentPageId();
-  
-        if (newPageId && newPageId !== currentPageId) {
-          editor.setCurrentPage(newPageId);
-          editor.setCameraOptions({ isLocked: true });
-          editor.zoomToFit({ force: true, immediate: true });
-        }
-      },
-      {
-        scope: "all",
-        source: "remote",
-      }
-    );
-  
-    return () => {
-      unsubscribe();
-    };
-  }, [editor, iamModerator]);
+        // Sync student's view to moderator's page change
+        useEffect(() => {
+            if (!editor || iamModerator) return;
+
+            const unsubscribe = editor.store.listen(
+                (record: any) => {
+                    const pageStateUpdates = record.changes?.["instancePageState"]?.updated;
+
+                    if (!pageStateUpdates || pageStateUpdates.length === 0) return;
+
+                    const [, newPageState] = pageStateUpdates[0]; // [old, new]
+
+                    const newPageId = newPageState?.current;
+                    const currentPageId = editor.getCurrentPageId();
+
+                    if (newPageId && newPageId !== currentPageId) {
+                        editor.setCurrentPage(newPageId);
+                        editor.setCameraOptions({ isLocked: true });
+                        editor.zoomToFit({ force: true, immediate: true });
+                    }
+                },
+                {
+                    scope: "all",
+                    source: "remote",
+                }
+            );
+
+            return () => {
+                unsubscribe();
+            };
+        }, [editor, iamModerator]);
 
         const components: TLComponents = {
             ...{
