@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WhiteboardEditor } from "../core/WhiteboardEditor";
 import { Sidebar } from "../components/sidebar/WhiteboardSidebar";
 import { AssetRecordType, createShapeId, Editor, getSnapshot, TLEditorSnapshot, TLImageShape, transact } from "tldraw";
