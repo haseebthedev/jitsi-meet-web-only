@@ -1,5 +1,5 @@
 export const FILE_SERVER_URL = "https://jitsi.withturtled.com:5001";
-export const WORKER_URL = "https://jitsi.withturtled.com:5002";
+export const WORKER_URL = "http://localhost:5101";
 
 export const DEFAULT_CAMERA_OPTS = {
     isLocked: true,

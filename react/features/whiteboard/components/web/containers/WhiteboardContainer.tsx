@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
-import { Sidebar } from "./WhiteboardSidebar";
+import { WhiteboardEditor } from "../core/WhiteboardEditor";
+import { Sidebar } from "../components/sidebar/WhiteboardSidebar";
 import { AssetRecordType, createShapeId, Editor, getSnapshot, TLEditorSnapshot, TLImageShape, transact } from "tldraw";
 import { useSelector } from "react-redux";
 import { IReduxState } from "../../../../app/types";
 import { isLocalParticipantModerator } from "../../../../base/participants/functions";
-import { WhiteboarMobileTopBar } from "./WhiteboardMobileTopBar";
-import { IParticipant } from "../../../../base/participants/types";
+import { WhiteboarMobileTopBar } from "../components/topbar/WhiteboardMobileTopBar";
 
 const WhiteboardApp = () => {
     const editorsRef = useRef(new Map<string, Editor>());

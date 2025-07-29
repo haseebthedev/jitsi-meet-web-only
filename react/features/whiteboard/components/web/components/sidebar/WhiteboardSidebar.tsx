@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { computed, Editor, react, TLRecord } from "tldraw";
-import { WhiteboardEditor } from "./whiteboard/WhiteboardEditor";
+import { WhiteboardEditor } from "../../core/WhiteboardEditor";
 
 interface SidebarI {
     iamModerator: boolean | null;
@@ -10,45 +10,10 @@ interface SidebarI {
     editorsRef: React.MutableRefObject<Map<string, Editor>>;
 }
 
-// @ts-ignore
-const isInstanceRecord = (record: TLRecord): record is { currentPageId: string } => "currentPageId" in record;
-
 const Sidebar = ({ iamModerator, occupants, onPreviewClick, editorsRef, classId }: SidebarI) => {
     const items = iamModerator
         ? occupants.filter((el) => el.role === "participant") // Show students for moderators
         : occupants.filter((el) => el.role === "moderator"); // Show tutor for students
-
-    // const handleEditorMount = (editor: Editor) => {
-    //     const handleChangeEvent = (change: any) => {
-    //         const { added, updated, removed } = change.changes;
-
-    //         added && console.log("Added:", added);
-    //         updated && console.log("Updated:", updated);
-    //         removed && console.log("Removed:", removed);
-
-    //         // Process updated changes
-    //         Object.values(updated).forEach(([from, to]: any) => {
-    //             if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
-    //                 // @ts-ignore
-    //                 editor.setCurrentPage(to.currentPageId);
-    //             }
-
-    //             // const currentPageId = editor.getCurrentPageId();
-    //             // if (currentPageId.includes("page:IA")) {
-    //             //     editor.zoomToFit({ force: true, immediate: true });
-    //             // }
-    //         });
-    //     };
-
-    //     const cleanupFunction = editor.store.listen(handleChangeEvent, {
-    //         scope: "all",
-    //         source: "user",
-    //     });
-
-    //     return () => {
-    //         cleanupFunction();
-    //     };
-    // };
 
     const onMount = useCallback((occupantId: string, editor: Editor) => {
         const isLeader = false;

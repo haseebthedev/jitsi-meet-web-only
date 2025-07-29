@@ -1,5 +1,5 @@
 // import { ExcalidrawApp } from "@jitsi/excalidraw";
-import { WhiteboardApp } from "./edu-whiteboard/Whiteboard";
+import { WhiteboardApp } from "./WhiteboardContainer";
 import "tldraw/tldraw.css";
 import clsx from "clsx";
 import i18next from "i18next";
@@ -8,15 +8,15 @@ import { WithTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 
 // @ts-ignore
-import Filmstrip from "../../../../../modules/UI/videolayout/Filmstrip";
-import { IReduxState } from "../../../app/types";
-import { translate } from "../../../base/i18n/functions";
-import { getLocalParticipant } from "../../../base/participants/functions";
-import { getVerticalViewMaxWidth } from "../../../filmstrip/functions.web";
-import { getToolboxHeight } from "../../../toolbox/functions.web";
-import { shouldDisplayTileView } from "../../../video-layout/functions.any";
-import { WHITEBOARD_UI_OPTIONS } from "../../constants";
-import { getCollabDetails, getCollabServerUrl, isWhiteboardOpen, isWhiteboardVisible } from "../../functions";
+import Filmstrip from "../../../../../../modules/UI/videolayout/Filmstrip";
+import { IReduxState } from "../../../../app/types";
+import { translate } from "../../../../base/i18n/functions";
+import { getLocalParticipant } from "../../../../base/participants/functions";
+import { getVerticalViewMaxWidth } from "../../../../filmstrip/functions.web";
+import { getToolboxHeight } from "../../../../toolbox/functions.web";
+import { shouldDisplayTileView } from "../../../../video-layout/functions.any";
+import { WHITEBOARD_UI_OPTIONS } from "../../../constants";
+import { getCollabDetails, getCollabServerUrl, isWhiteboardOpen, isWhiteboardVisible } from "../../../functions";
 
 /**
  * Space taken by meeting elements like the subject and the watermark.

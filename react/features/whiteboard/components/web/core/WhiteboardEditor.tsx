@@ -19,12 +19,13 @@ import {
     TLUiEventHandler,
 } from "tldraw";
 import { multiplayerAssets, unfurlBookmarkUrl } from "./useSyncStore";
-import { processSlideUrl } from "./api";
-import { IconTrash, IconUndo, IconRedo } from "../../../../../base/icons/svg";
+import { processSlideUrl } from "../utils/api";
+import { IconTrash, IconUndo, IconRedo } from "../../../../base/icons/svg";
 import { extractPresentationIdFromSlideUrl } from "../utils";
 import { WORKER_URL } from "../constants";
-import Icon from "../../../../../base/icons/components/Icon";
+import Icon from "../../../../base/icons/components/Icon";
 import "tldraw/tldraw.css";
+
 
 interface WhiteboardEditorProps extends Omit<TldrawProps, "onMount"> {
     iamModerator?: boolean;
@@ -62,31 +63,83 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             userInfo: { id: occupantId },
         });
 
+        // Function to set page to IA-01 if it exists
+        const setToFirstIAPage = useCallback((editor: Editor) => {
+            const pages = editor.getPages();
+            const iaPages = pages.filter(page => page.id.includes('page:IA'));
+            
+            if (iaPages.length > 0) {
+                const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
+                if (firstIAPage) {
+                    editor.setCurrentPage(firstIAPage.id);
+                    editor.setCameraOptions({ isLocked: true });
+                    editor.zoomToFit({ force: true, immediate: true });
+                }
+            }
+        }, []);
+
+        // Handle initial mount and IA page detection
+        useEffect(() => {
+            if (!editor || iamModerator) return;
+            
+            // Set to IA-01 on initial mount if it exists
+            setToFirstIAPage(editor);
+
+            // Listen for store changes
+            const unsubscribe = editor.store.listen((record) => {
+                // Handle any store changes by checking for IA pages
+                const pages = editor.getPages();
+                const iaPages = pages.filter(page => page.id.includes('page:IA'));
+                
+                if (iaPages.length > 0) {
+                    const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
+                    if (firstIAPage && firstIAPage.id !== editor.getCurrentPageId()) {
+                        // Small delay to ensure pages are fully loaded
+                        setTimeout(() => {
+                            editor.setCurrentPage(firstIAPage.id);
+                            editor.setCameraOptions({ isLocked: true });
+                            editor.zoomToFit({ force: true, immediate: true });
+                        }, 100);
+                    }
+                }
+            }, {
+                scope: 'all',
+                source: 'remote'
+            });
+
+            return () => unsubscribe();
+        }, [editor, iamModerator, setToFirstIAPage]);
+
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);
-            const [loading, setLoading] = useState<boolean>(false); // New state for loader
+            const [loading, setLoading] = useState<boolean>(false);
             const [error, setError] = useState<string | null>(null);
-
+        
             const handleUpload = async () => {
                 if (!link) return;
-
+        
                 try {
                     setLoading(true);
-
+                    setError(null); // Clear any previous errors
+        
                     const presentationId = extractPresentationIdFromSlideUrl(link);
                     if (!presentationId) {
                         setError("Invalid Google Slides link. Please enter a valid URL.");
                         return;
                     }
+        
+                    // processSlideUrl will now throw an error with the backend's error message
                     const images = await processSlideUrl(presentationId);
                     onActivityUpload?.(images, onClose);
-                } catch (err) {
-                    setError("Failed to process the presentation. Please try again.");
+        
+                } catch (err: any) {
+                    // The error message will already be user-friendly from the backend
+                    setError(err.message);
                 } finally {
                     setLoading(false);
                 }
             };
-
+        
             return (
                 <>
                     <TldrawUiDialogHeader>
@@ -96,7 +149,23 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                     <TldrawUiDialogBody>
                         {/* @ts-ignore */}
                         <TldrawUiInput placeholder="Enter Google Slides URL" onValueChange={setLink} />
-                        {error && <p className="error-message">{error}</p>}
+                        {error && (
+                            <div 
+                                className="error-message" 
+                                style={{ 
+                                    color: '#dc2626',
+                                    marginTop: '8px',
+                                    fontSize: '14px',
+                                    padding: '8px',
+                                    backgroundColor: '#fee2e2',
+                                    borderRadius: '4px',
+                                    border: '1px solid #fca5a5',
+                                    whiteSpace: 'pre-line'
+                                }}
+                            >
+                                {error}
+                            </div>
+                        )}
                     </TldrawUiDialogBody>
                     <TldrawUiDialogFooter className="tlui-dialog__footer__actions">
                         {/* @ts-ignore */}
@@ -104,13 +173,20 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                             <TldrawUiButtonLabel>Cancel</TldrawUiButtonLabel>
                         </TldrawUiButton>
                         {/* @ts-ignore */}
-                        <TldrawUiButton type="primary" disabled={loading ?? false} onClick={handleUpload}>
-                            <TldrawUiButtonLabel>{loading ? "Please Wait..." : "Upload"}</TldrawUiButtonLabel>
+                        <TldrawUiButton 
+                            type="primary" 
+                            disabled={loading || !link}
+                            onClick={handleUpload}
+                        >
+                            <TldrawUiButtonLabel>
+                                {loading ? "Please Wait..." : "Upload"}
+                            </TldrawUiButtonLabel>
                         </TldrawUiButton>
                     </TldrawUiDialogFooter>
                 </>
             );
         };
+        
 
         const CustomSharePanelForModerator = () => {
             const { addDialog } = useDialogs();
@@ -310,6 +386,64 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             };
         }, [editor, isInSidebar]);
 
+    // Zoom when solo tutor navigates to a new page (e.g., Page 2+)
+    useEffect(() => {
+        if (!editor || isInSidebar || previewMode) return;
+        const handlePageChange = () => {
+            const currentPageId = editor.getCurrentPageId();
+
+            if (currentPageId.includes("page:IA")) {
+                console.log("handlePageChange called");
+                editor.setCameraOptions({ isLocked: false });
+                editor.zoomToFit({ force: true, immediate: true });
+            }
+        };
+
+        // Listen to page changes
+        const removeListener = editor.store.listen(() => {
+            handlePageChange();
+        }, {
+            scope: 'all',
+            source: 'user',
+        });
+
+        return () => {
+            removeListener();
+        };
+    }, [editor, isInSidebar, previewMode]);
+
+    // Sync student's view to moderator's page change
+useEffect(() => {
+    if (!editor || iamModerator) return;
+  
+    const unsubscribe = editor.store.listen(
+      (record) => {
+        const pageStateUpdates = record.changes?.['instancePageState']?.updated;
+  
+        if (!pageStateUpdates || pageStateUpdates.length === 0) return;
+  
+        const [, newPageState] = pageStateUpdates[0]; // [old, new]
+  
+        const newPageId = newPageState?.current;
+        const currentPageId = editor.getCurrentPageId();
+  
+        if (newPageId && newPageId !== currentPageId) {
+          editor.setCurrentPage(newPageId);
+          editor.setCameraOptions({ isLocked: true });
+          editor.zoomToFit({ force: true, immediate: true });
+        }
+      },
+      {
+        scope: "all",
+        source: "remote",
+      }
+    );
+  
+    return () => {
+      unsubscribe();
+    };
+  }, [editor, iamModerator]);
+
         const components: TLComponents = {
             ...{
                 SharePanel: iamModerator ? CustomSharePanelForModerator : CustomSharePanelForParticipant,
@@ -328,7 +462,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         }, []);
 
         return (
-            <div onCopy={(event) => event.stopPropagation()}>
+            <div>
                 <Tldraw
                     store={store}
                     forceMobile={true}

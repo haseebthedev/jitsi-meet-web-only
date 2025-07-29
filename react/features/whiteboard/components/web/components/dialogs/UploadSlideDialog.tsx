@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TldrawUiDialogBody, TldrawUiDialogFooter, TldrawUiInput } from "tldraw";
-import { processSlideUrl } from "./api";
+import { processSlideUrl } from "../../utils/api";
 
 interface UploadSlideDialogProps {
     onActivityUpload: (images: string[], onClose: () => void) => void;

@@ -2,8 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 
-import Dialog from '../../../base/ui/components/web/Dialog';
-import { getWhiteboardConfig } from '../../functions';
+import Dialog from '../../../../../base/ui/components/web/Dialog';
+import { getWhiteboardConfig } from '../../../../functions';
 
 /**
  * Component that renders the whiteboard user limit dialog.
