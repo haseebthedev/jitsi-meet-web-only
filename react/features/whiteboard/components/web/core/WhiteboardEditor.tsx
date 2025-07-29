@@ -112,29 +112,34 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
 
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);
-            const [loading, setLoading] = useState<boolean>(false); // New state for loader
+            const [loading, setLoading] = useState<boolean>(false);
             const [error, setError] = useState<string | null>(null);
-
+        
             const handleUpload = async () => {
                 if (!link) return;
-
+        
                 try {
                     setLoading(true);
-
+                    setError(null); // Clear any previous errors
+        
                     const presentationId = extractPresentationIdFromSlideUrl(link);
                     if (!presentationId) {
                         setError("Invalid Google Slides link. Please enter a valid URL.");
                         return;
                     }
+        
+                    // processSlideUrl will now throw an error with the backend's error message
                     const images = await processSlideUrl(presentationId);
                     onActivityUpload?.(images, onClose);
-                } catch (err) {
-                    setError("Failed to process the presentation. Please try again.");
+        
+                } catch (err: any) {
+                    // The error message will already be user-friendly from the backend
+                    setError(err.message);
                 } finally {
                     setLoading(false);
                 }
             };
-
+        
             return (
                 <>
                     <TldrawUiDialogHeader>
@@ -144,7 +149,23 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                     <TldrawUiDialogBody>
                         {/* @ts-ignore */}
                         <TldrawUiInput placeholder="Enter Google Slides URL" onValueChange={setLink} />
-                        {error && <p className="error-message">{error}</p>}
+                        {error && (
+                            <div 
+                                className="error-message" 
+                                style={{ 
+                                    color: '#dc2626',
+                                    marginTop: '8px',
+                                    fontSize: '14px',
+                                    padding: '8px',
+                                    backgroundColor: '#fee2e2',
+                                    borderRadius: '4px',
+                                    border: '1px solid #fca5a5',
+                                    whiteSpace: 'pre-line'
+                                }}
+                            >
+                                {error}
+                            </div>
+                        )}
                     </TldrawUiDialogBody>
                     <TldrawUiDialogFooter className="tlui-dialog__footer__actions">
                         {/* @ts-ignore */}
@@ -152,8 +173,14 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                             <TldrawUiButtonLabel>Cancel</TldrawUiButtonLabel>
                         </TldrawUiButton>
                         {/* @ts-ignore */}
-                        <TldrawUiButton type="primary" disabled={loading ?? false} onClick={handleUpload}>
-                            <TldrawUiButtonLabel>{loading ? "Please Wait..." : "Upload"}</TldrawUiButtonLabel>
+                        <TldrawUiButton 
+                            type="primary" 
+                            disabled={loading || !link}
+                            onClick={handleUpload}
+                        >
+                            <TldrawUiButtonLabel>
+                                {loading ? "Please Wait..." : "Upload"}
+                            </TldrawUiButtonLabel>
                         </TldrawUiButton>
                     </TldrawUiDialogFooter>
                 </>
