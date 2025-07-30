@@ -1,4 +1,5 @@
-import React, { memo, useCallback, useEffect, useState } from "react";
+
+import React, { memo, useCallback, useEffect, useState, useRef } from "react";
 import { useSync } from "@tldraw/sync";
 import {
     Tldraw,
@@ -55,8 +56,9 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
     }) => {
         const roomId = `${classId}-${occupantId}`;
         const [editor, setEditor] = useState<Editor | null>(null);
+        const lastSyncedPageRef = useRef<string | null>(null);
+        const isSyncingRef = useRef(false);
 
-        // const store = useSyncDemo({ roomId });
         const store = useSync({
             uri: `${WORKER_URL}/connect/${roomId}`,
             assets: multiplayerAssets,
@@ -74,6 +76,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                     editor.setCurrentPage(firstIAPage.id);
                     editor.setCameraOptions({ isLocked: true });
                     editor.zoomToFit({ force: true, immediate: true });
+                    lastSyncedPageRef.current = firstIAPage.id;
                 }
             }
         }, []);
@@ -85,22 +88,14 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             // Set to IA-01 on initial mount if it exists
             setToFirstIAPage(editor);
 
-            // Listen for store changes
+            // Listen for store changes - but don't auto-switch to first page on every change
             const unsubscribe = editor.store.listen((record) => {
-                // Handle any store changes by checking for IA pages
-                const pages = editor.getPages();
-                const iaPages = pages.filter(page => page.id.includes('page:IA'));
-                
-                if (iaPages.length > 0) {
-                    const firstIAPage = iaPages.find(page => page.id === 'page:IA-01');
-                    if (firstIAPage && firstIAPage.id !== editor.getCurrentPageId()) {
-                        // Small delay to ensure pages are fully loaded
-                        setTimeout(() => {
-                            editor.setCurrentPage(firstIAPage.id);
-                            editor.setCameraOptions({ isLocked: true });
-                            editor.zoomToFit({ force: true, immediate: true });
-                        }, 100);
-                    }
+                // Only handle camera settings based on current page, not page switching
+                const currentPageId = editor.getCurrentPageId();
+                if (currentPageId.includes("page:IA") || isInSidebar) {
+                    editor.zoomToFit({ force: true, immediate: true }).setCameraOptions({ isLocked: true });
+                } else if (!isSyncingRef.current) {
+                    editor.setCameraOptions({ isLocked: false });
                 }
             }, {
                 scope: 'all',
@@ -108,7 +103,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
             });
 
             return () => unsubscribe();
-        }, [editor, iamModerator, setToFirstIAPage]);
+        }, [editor, iamModerator, setToFirstIAPage, isInSidebar]);
 
         const UploadSlideDialog = ({ onClose }: { onClose(): void }) => {
             const [link, setLink] = useState<string | null>(null);
@@ -120,7 +115,7 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         
                 try {
                     setLoading(true);
-                    setError(null); // Clear any previous errors
+                    setError(null);
         
                     const presentationId = extractPresentationIdFromSlideUrl(link);
                     if (!presentationId) {
@@ -128,12 +123,10 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                         return;
                     }
         
-                    // processSlideUrl will now throw an error with the backend's error message
                     const images = await processSlideUrl(presentationId);
                     onActivityUpload?.(images, onClose);
         
                 } catch (err: any) {
-                    // The error message will already be user-friendly from the backend
                     setError(err.message);
                 } finally {
                     setLoading(false);
@@ -186,7 +179,6 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
                 </>
             );
         };
-        
 
         const CustomSharePanelForModerator = () => {
             const { addDialog } = useDialogs();
@@ -322,17 +314,11 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         };
 
         const renameDefaultPageonLoad = (editor: Editor) => {
-            // Get all pages in the editor
             const pages = editor.getPages();
-
-            // Check if any page already has the name "Whiteboard"
             const whiteboardExists = pages.some((page) => page.name === "Whiteboard");
 
             if (!whiteboardExists) {
-                // Find the current page
                 const currentPage = editor.getCurrentPage();
-
-                // Rename the current page only if its name is "Page 1"
                 if (currentPage && currentPage.name === "Page 1") {
                     editor.renamePage(currentPage.id, "Whiteboard");
                 }
@@ -347,102 +333,141 @@ export const WhiteboardEditor: React.FC<WhiteboardEditorProps> = memo(
         useEffect(() => {
             if (!editor) return;
 
-            // Setting default font stylings
             setDefaultFontStyling(editor);
-
-            // Renaming default page name
             renameDefaultPageonLoad(editor);
         }, [editor]);
 
+        // Main sync logic - handles remote changes and camera settings
         useEffect(() => {
             if (!editor) return;
 
             const handleChangeEvent = (change: any) => {
                 Object.values(change.changes.updated).forEach(([from, to]: any) => {
-                    // if (isInstanceRecord(from) && isInstanceRecord(to) && from.currentPageId !== to.currentPageId) {
-                    //     // @ts-ignore
-                    //     editor.setCurrentPage(to.currentPageId);
-                    // }
+                    // Handle page changes from remote sources (moderator in preview mode)
+                    if (from?.currentPageId !== undefined && to?.currentPageId !== undefined && 
+                        from.currentPageId !== to.currentPageId) {
+                        
+                        const newPageId = to.currentPageId;
+                        const currentPageId = editor.getCurrentPageId();
+                        
+                        // Only sync if:
+                        // 1. We're not a moderator (students should sync)
+                        // 2. The page is different from current
+                        // 3. We haven't already synced to this page (prevent loops)
+                        // 4. We're not currently in the middle of a sync operation
+                        if (!iamModerator && newPageId !== currentPageId && 
+                            newPageId !== lastSyncedPageRef.current && !isSyncingRef.current) {
+                            
+                            console.log(`Syncing student to page: ${newPageId}`);
+                            isSyncingRef.current = true;
+                            
+                            // Use requestAnimationFrame to ensure smooth transition
+                            requestAnimationFrame(() => {
+                                try {
+                                    editor.setCurrentPage(newPageId);
+                                    editor.setCameraOptions({ isLocked: true });
+                                    editor.zoomToFit({ force: true, immediate: true });
+                                    lastSyncedPageRef.current = newPageId;
+                                } finally {
+                                    // Reset sync flag after a short delay
+                                    setTimeout(() => {
+                                        isSyncingRef.current = false;
+                                    }, 100);
+                                }
+                            });
+                        }
+                    }
 
+                    // Handle camera settings based on current page
                     const currentPageId = editor.getCurrentPageId();
-                    // if (currentPageId.includes("page:IA") || isInSidebar || previewMode) {
                     if (currentPageId.includes("page:IA") || isInSidebar) {
                         editor.zoomToFit({ force: true, immediate: true }).setCameraOptions({ isLocked: true });
-                    } else {
+                    } else if (!isSyncingRef.current) {
                         editor.setCameraOptions({ isLocked: false });
                     }
                 });
             };
 
-            // Register the event listener
             const cleanupFunction = editor.store.listen(handleChangeEvent, {
                 scope: "all",
                 source: "remote",
             });
 
-            // Cleanup listener on component unmount or when dependencies change
             return () => {
                 cleanupFunction();
             };
-        }, [editor, isInSidebar]);
+        }, [editor, isInSidebar, iamModerator]);
 
-    // Zoom when solo tutor navigates to a new page (e.g., Page 2+)
-    useEffect(() => {
-        if (!editor || isInSidebar || previewMode) return;
-        const handlePageChange = () => {
-            const currentPageId = editor.getCurrentPageId();
+        // Handle moderator's own page changes (for zoom/camera settings)
+        useEffect(() => {
+            if (!editor || isInSidebar || previewMode) return;
+            
+            const handlePageChange = () => {
+                const currentPageId = editor.getCurrentPageId();
 
-            if (currentPageId.includes("page:IA")) {
-                console.log("handlePageChange called");
-                editor.setCameraOptions({ isLocked: false });
-                editor.zoomToFit({ force: true, immediate: true });
-            }
-        };
+                if (currentPageId.includes("page:IA")) {
+                    console.log("handlePageChange called for moderator");
+                    editor.setCameraOptions({ isLocked: false });
+                    editor.zoomToFit({ force: true, immediate: true });
+                }
+            };
 
-        // Listen to page changes
-        const removeListener = editor.store.listen(() => {
-            handlePageChange();
-        }, {
-            scope: 'all',
-            source: 'user',
-        });
+            const removeListener = editor.store.listen(() => {
+                if (!isSyncingRef.current) {
+                    handlePageChange();
+                }
+            }, {
+                scope: 'all',
+                source: 'user',
+            });
 
-        return () => {
-            removeListener();
-        };
-    }, [editor, isInSidebar, previewMode]);
+            return () => {
+                removeListener();
+            };
+        }, [editor, isInSidebar, previewMode]);
 
-    // Sync student's view to moderator's page change
-useEffect(() => {
-    if (!editor || iamModerator) return;
-  
-    const unsubscribe = editor.store.listen(
-      (record) => {
-        const pageStateUpdates = record.changes?.['instancePageState']?.updated;
-  
-        if (!pageStateUpdates || pageStateUpdates.length === 0) return;
-  
-        const [, newPageState] = pageStateUpdates[0]; // [old, new]
-  
-        const newPageId = newPageState?.current;
-        const currentPageId = editor.getCurrentPageId();
-  
-        if (newPageId && newPageId !== currentPageId) {
-          editor.setCurrentPage(newPageId);
-          editor.setCameraOptions({ isLocked: true });
-          editor.zoomToFit({ force: true, immediate: true });
-        }
-      },
-      {
-        scope: "all",
-        source: "remote",
-      }
-    );
-  
-    return () => {
-      unsubscribe();
-    };
-  }, [editor, iamModerator]);
+        // Backup sync mechanism for instancePageState changes
+        useEffect(() => {
+            if (!editor || iamModerator) return;
+        
+            const unsubscribe = editor.store.listen(
+                (record) => {
+                    const pageStateUpdates = record.changes?.['instancePageState']?.updated;
+        
+                    if (!pageStateUpdates || pageStateUpdates.length === 0 || isSyncingRef.current) return;
+        
+                    const [, newPageState] = pageStateUpdates[0];
+                    const newPageId = newPageState?.current;
+                    const currentPageId = editor.getCurrentPageId();
+        
+                    if (newPageId && newPageId !== currentPageId && newPageId !== lastSyncedPageRef.current) {
+                        console.log(`Backup sync to page: ${newPageId}`);
+                        isSyncingRef.current = true;
+                        
+                        requestAnimationFrame(() => {
+                            try {
+                                editor.setCurrentPage(newPageId);
+                                editor.setCameraOptions({ isLocked: true });
+                                editor.zoomToFit({ force: true, immediate: true });
+                                lastSyncedPageRef.current = newPageId;
+                            } finally {
+                                setTimeout(() => {
+                                    isSyncingRef.current = false;
+                                }, 100);
+                            }
+                        });
+                    }
+                },
+                {
+                    scope: "all",
+                    source: "remote",
+                }
+            );
+        
+            return () => {
+                unsubscribe();
+            };
+        }, [editor, iamModerator]);
 
         const components: TLComponents = {
             ...{
@@ -454,7 +479,6 @@ useEffect(() => {
         };
 
         const onUiEvent = useCallback<TLUiEventHandler>((name, _: any) => {
-            // For enforcing manual back-to-content logic
             if (name.toString() === "zoom-to-content") {
                 editor?.zoomToFit({ force: true, immediate: true });
                 editor?.resetZoom();
