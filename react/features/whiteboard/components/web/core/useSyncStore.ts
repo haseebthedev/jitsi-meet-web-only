@@ -1,6 +1,5 @@
+import { WORKER_URL } from "../constants"
 import { AssetRecordType, getHashForString, TLAssetStore, TLBookmarkAsset, uniqueId } from "tldraw"
-
-const WORKER_URL = "http://localhost:5101";
 
 export const multiplayerAssets: TLAssetStore = {
     // to upload an asset, we prefix it with a unique id, POST it to our worker, and return the URL

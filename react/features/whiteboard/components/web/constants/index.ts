@@ -1,8 +1,10 @@
-export const FILE_SERVER_URL = "https://jitsi.withturtled.com:5001";
-export const WORKER_URL = "https://jitsi.withturtled.com:5002";
-
+// For Local testing
 // export const FILE_SERVER_URL = "http://localhost:5100";
 // export const WORKER_URL = "http://localhost:5101";
+
+// For Staging / Production instance
+export const FILE_SERVER_URL = "https://jitsi.withturtled.com:5001";
+export const WORKER_URL = "https://jitsi.withturtled.com:5002";
 
 export const DEFAULT_CAMERA_OPTS = {
     isLocked: true,
