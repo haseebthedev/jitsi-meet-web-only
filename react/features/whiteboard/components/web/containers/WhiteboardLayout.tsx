@@ -61,6 +61,29 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
         collabAPIRef.current.setUsername(localParticipantName);
     }, [localParticipantName]);
 
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            // Remove Cut/Copy/Paste
+            document
+                .querySelectorAll(
+                    '[data-testid="context-menu.cut"], [data-testid="context-menu.copy"], [data-testid="context-menu.paste"]'
+                )
+                .forEach((el) => el.remove());
+
+            // Rename Duplicate
+            const duplicateBtn = document.querySelector<HTMLSpanElement>(
+                '[data-testid="context-menu.duplicate"] .tlui-button__label'
+            );
+            if (duplicateBtn && duplicateBtn.textContent !== "Copy & Paste") {
+                duplicateBtn.textContent = "Copy & Paste";
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+        return () => observer.disconnect();
+    }, []);
+
     /**
      * Computes the width and the height of the component.
      *
@@ -93,24 +116,6 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
         };
     };
 
-    // const getExcalidrawAPI = useCallback((excalidrawAPI) => {
-    //     if (excalidrawAPIRef.current) {
-    //         return;
-    //     }
-    //     excalidrawAPIRef.current = excalidrawAPI;
-    // }, []);
-
-    // const getCollabAPI = useCallback(
-    //     (collabAPI) => {
-    //         if (collabAPIRef.current) {
-    //             return;
-    //         }
-    //         collabAPIRef.current = collabAPI;
-    //         collabAPIRef.current.setUsername(localParticipantName);
-    //     },
-    //     [localParticipantName]
-    // );
-
     return (
         <div
             className={clsx(isResizing && "disable-pointer", "whiteboard-container")}
@@ -135,7 +140,6 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
                         </span>
                     }
                     <WhiteboardApp />
-                    {/* <p className="w-full h-full flex justify-center items-center">THIS IS WHITEBOARD</p> */}
                     {/* <ExcalidrawApp
                         collabDetails={collabDetails}
                         collabServerUrl={collabServerUrl}
